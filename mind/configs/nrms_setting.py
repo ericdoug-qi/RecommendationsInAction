@@ -39,6 +39,6 @@ batch_size = 32
 MIND_type = 'large'
 
 # data setting
-data_root = "/home/ericdoug_qi/competitions/mind/small"
+data_root = "/home/ericdoug_qi/competitions/mind/datas/large"
 
 
