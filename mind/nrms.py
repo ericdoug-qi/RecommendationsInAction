@@ -55,8 +55,8 @@ data_path = tmpdir.name
 train_news_file = os.path.join(data_root, 'train', r'news.tsv')
 logger.debug(f"train_news_file: {train_news_file}")
 train_behaviors_file = os.path.join(data_root, 'train', r'behaviors.tsv')
-valid_news_file = os.path.join(data_root, 'valid', r'news.tsv')
-valid_behaviors_file = os.path.join(data_root, 'valid', r'behaviors.tsv')
+valid_news_file = os.path.join(data_root, 'dev', r'news.tsv')
+valid_behaviors_file = os.path.join(data_root, 'dev', r'behaviors.tsv')
 test_news_file = os.path.join(data_root, 'test', r'news.tsv')
 test_behaviors_file = os.path.join(data_root, 'test', r'behaviors.tsv')
 wordEmb_file = os.path.join(data_root, "utils", "embedding.npy")
@@ -70,10 +70,10 @@ if not os.path.exists(train_news_file):
     download_deeprec_resources(mind_url, os.path.join(data_root, 'train'), mind_train_dataset)
 
 if not os.path.exists(valid_news_file):
-    download_deeprec_resources(mind_url, \
+    download_deeprec_resources(mind_url,
                                os.path.join(data_root, 'valid'), mind_dev_dataset)
 if not os.path.exists(yaml_file):
-    download_deeprec_resources(r'https://recodatasets.blob.core.windows.net/newsrec/', \
+    download_deeprec_resources(r'https://recodatasets.blob.core.windows.net/newsrec/',
                                os.path.join(data_root, 'utils'), mind_utils)
 
 
