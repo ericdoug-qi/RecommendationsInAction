@@ -31,7 +31,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 print(BASE_DIR)
 
-epochs = 1
+epochs = 10
 seed = 42
 batch_size = 32
 
