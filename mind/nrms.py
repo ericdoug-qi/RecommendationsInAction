@@ -49,8 +49,6 @@ from configs.nrms_setting import BASE_DIR
 log_file = os.path.join(BASE_DIR, "logs", "nrms.log")
 
 logger = get_logger(log_file)
-tmpdir = TemporaryDirectory()
-data_path = tmpdir.name
 
 train_news_file = os.path.join(data_root, 'train', r'news.tsv')
 logger.debug(f"train_news_file: {train_news_file}")
@@ -100,14 +98,14 @@ logger.debug(f"res_syn: {res_syn}")
 
 sb.glue("res_syn", res_syn)
 
-model_path = os.path.join(data_path, "model")
+model_path = os.path.join(BASE_DIR, "ckpt")
 os.makedirs(model_path, exist_ok=True)
 
 model.model.save_weights(os.path.join(model_path, "nrms_ckpt"))
 
 group_impr_indexes, group_labels, group_preds = model.run_fast_eval(test_news_file, test_behaviors_file)
 
-with open(os.path.join(data_path, 'prediction.txt'), 'w') as f:
+with open(os.path.join(BASE_DIR, 'submits', 'prediction.txt'), 'w') as f:
     for impr_index, preds in tqdm(zip(group_impr_indexes, group_preds)):
         impr_index += 1
         pred_rank = (np.argsort(np.argsort(preds)[::-1]) + 1).tolist()
@@ -115,8 +113,6 @@ with open(os.path.join(data_path, 'prediction.txt'), 'w') as f:
         f.write(' '.join([str(impr_index), pred_rank])+ '\n')
 
 
-f = zipfile.ZipFile(os.path.join(data_path, 'prediction.zip'), 'w', zipfile.ZIP_DEFLATED)
-f.write(os.path.join(data_path, 'prediction.txt'), arcname='prediction.txt')
+f = zipfile.ZipFile(os.path.join(BASE_DIR, 'submits', 'prediction.zip'), 'w', zipfile.ZIP_DEFLATED)
+f.write(os.path.join(BASE_DIR, 'submits', 'prediction.txt'), arcname='prediction.txt')
 f.close()
-
-logger.info(f"data_path: {data_path}")
