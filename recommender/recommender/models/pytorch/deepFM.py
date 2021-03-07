@@ -38,7 +38,7 @@ from collections import OrderedDict, namedtuple, defaultdict
 # my packages
 
 
-class Deepfm(nn.Module):
+class DeepFM(nn.Module):
 
     def __init__(self, feat_sizes, sparse_feature_columns, dense_feature_columns, dnn_hidden_units=[400, 400, 400],
                  dnn_dropout=0.0, ebedding_size=4,
