@@ -40,9 +40,18 @@ from collections import OrderedDict, namedtuple, defaultdict
 
 class DeepFM(nn.Module):
 
-    def __init__(self, feat_sizes, sparse_feature_columns, dense_feature_columns, dnn_hidden_units=[400, 400, 400],
-                 dnn_dropout=0.0, ebedding_size=4,
-                 l2_reg_linear=0.00001, l2_reg_embedding=0.00001, l2_reg_dnn=0, init_std=0.0001, seed=1024,
+    def __init__(self,
+                 feat_sizes,
+                 sparse_feature_columns,
+                 dense_feature_columns,
+                 dnn_hidden_units=[400, 400, 400],
+                 dnn_dropout=0.0,
+                 embedding_size=4,
+                 l2_reg_linear=0.00001,
+                 l2_reg_embedding=0.00001,
+                 l2_reg_dnn=0,
+                 init_std=0.0001,
+                 seed=1024,
                  device='cpu'):
 
         super(DeepFM, self).__init__()
@@ -50,7 +59,7 @@ class DeepFM(nn.Module):
         self.device = device
         self.sparse_feature_columns = sparse_feature_columns
         self.dense_feature_columns = dense_feature_columns
-        self.embedding_size = ebedding_size
+        self.embedding_size = embedding_size
         self.l2_reg_linear = l2_reg_linear
 
         # self.feature_index 建立feature到列名到输入数据X的相对位置的映射
@@ -86,6 +95,7 @@ class DeepFM(nn.Module):
 
     def forward(self, X):
         '''
+
         :param X: pd.DtateFrame
         :return:  y_pre
         '''
