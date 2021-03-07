@@ -45,7 +45,7 @@ class DeepFM(nn.Module):
                  l2_reg_linear=0.00001, l2_reg_embedding=0.00001, l2_reg_dnn=0, init_std=0.0001, seed=1024,
                  device='cpu'):
 
-        super(Deepfm, self).__init__()
+        super(DeepFM, self).__init__()
         self.feat_sizes = feat_sizes
         self.device = device
         self.sparse_feature_columns = sparse_feature_columns
