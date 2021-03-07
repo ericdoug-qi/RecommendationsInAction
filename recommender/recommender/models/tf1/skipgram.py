@@ -19,30 +19,11 @@ from __future__ import unicode_literals
 from __future__ import absolute_import
 
 # sys packages
-import os
 
 # third packages
 import tensorflow as tf
 
 # my packages
-from utils.file_helper import get_file_list, read_my_file_format
-
-def process_data(my_path, batch_size=32, num_epochs=1):
-    filenames = get_file_list(my_path)
-    next_element = read_my_file_format(filenames, batch_size, num_epochs)
-    return next_element
-
-def get_session(gpu_fraction=0.1):
-    """创建session，指定GPU或者CPU使用率
-    
-    :param gpu_fraction: 
-    :return: 
-    """
-
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_fraction, allow_growth=True)
-
-    return tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
-
 
 class SkipGramModel(object):
     
@@ -130,8 +111,6 @@ class SkipGramModel(object):
                     optimizer = tf.train.AdagradOptimizer(learning_rate=self.learning_rate,
                                                           initial_accumulator_value=1e-8)
                 train_step = optimizer.minimize(loss, global_step=self.global_step)
-
-
 
         # 设定summary, 以便在Tensorboard里可视化
         with tf.name_scope("summaries"):

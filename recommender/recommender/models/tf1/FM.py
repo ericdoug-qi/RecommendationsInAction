@@ -1,57 +1,32 @@
+# _*_ coding: utf-8 _*_
 
-# coding: utf-8
+"""
+-------------------------------------------------
+   File Name: FM.py
+   Description :
+   Author : ericdoug
+   date：2021/3/1
+-------------------------------------------------
+   Change Activity:
+         2021/3/1: created
+-------------------------------------------------
+"""
 
-# ## 0）环境准备
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import absolute_import
 
-# In[1]:
+# sys packages
+import logging
 
-import numpy as np
+
+# third packages
 import tensorflow as tf
-import pandas as pd
-import random
-import math
-import re
 
-from sklearn import preprocessing
-from os import path, listdir
-from sklearn.datasets import load_svmlight_files
-from sklearn.model_selection import train_test_split
-from sklearn import metrics
-from tensorflow.contrib import layers
+# my packages
 
-import time
-import datetime
-
-import os
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
-
-print tf.__version__
-print tf.__path__
-
-
-# ## 1）数据准备Dataset格式
-
-# In[2]:
-
-# 每一行解析，解析标签csv格式
-# 0.0,0.6666666666666666,0.5,0.0,0.0,0.0,0.0,0.7272727272727273,0.42857142857142855
-# 数据处理
-def process_data(data_type, my_path, feature_size, batch_size=32, num_epochs=1):
-    filenames = get_file_list(my_path)
-    next_element = read_my_file_format(data_type, filenames, feature_size, batch_size, num_epochs)
-    return next_element
-
-# 创建session，指定GPU或者CPU使用率
-def get_session(gpu_fraction=0.1):
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_fraction,
-                                allow_growth=True)
-    # server = tf.train.Server.create_local_server()
-    return tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
-
-
-# ## 2）FM模型
-
-# In[3]:
 
 class FM(object):
     """ 初始化成员变量 """
@@ -79,7 +54,7 @@ class FM(object):
             # 标签：[batch_size, 1]
             labels = batch_data['labels']
             # 用户特征向量：[batch_size, feature_size]
-            dense_vector = tf.reshape(batch_data['dense_vector'], shape=[-1, feature_size, 1]) # None * feature_size * 1
+            dense_vector = tf.reshape(batch_data['dense_vector'], shape=[-1, self.feature_size, 1]) # None * feature_size * 1
             print("%s: %s" % ("dense_vector", dense_vector))
             print("%s: %s" % ("labels", labels))
             
@@ -129,18 +104,18 @@ class FM(object):
         """ 3 定义损失函数和AUC指标 """
         with tf.name_scope("loss"):
             # loss：Squared_error，Cross_entropy ,FTLR
-            if reg_type == 'l1_reg':
+            if self.reg_type == 'l1_reg':
                 regularization = tf.contrib.layers.l1_regularizer(self.reg_param)(self.FM_W)
-            elif reg_type == 'l2_reg':
+            elif self.reg_type == 'l2_reg':
                 regularization = self.reg_param * tf.nn.l2_loss(self.FM_W)
             else:  
                 regularization = self.reg_param * tf.nn.l2_loss(self.FM_W)    
             
-            if loss_fuc == 'Squared_error':
+            if self.loss_fuc == 'Squared_error':
                 loss = tf.reduce_mean(tf.reduce_sum(tf.square(labels - score), reduction_indices=[1])) + regularization
-            elif loss_fuc == 'Cross_entropy':
+            elif self.loss_fuc == 'Cross_entropy':
                 loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=tf.reshape(Y_Out, [-1]), labels=tf.reshape(labels, [-1]))) + regularization
-            elif loss_fuc == 'FTLR':
+            elif self.loss_fuc == 'FTLR':
                 loss = tf.reduce_mean(tf.reduce_sum(tf.square(labels - score), reduction_indices=[1])) + regularization
             # AUC                  
             auc = tf.metrics.auc(labels, score)
@@ -155,14 +130,14 @@ class FM(object):
         with tf.name_scope("optimizer"):
             #------bulid optimizer------
             with tf.variable_scope("Optimizer", reuse=tf.AUTO_REUSE):
-                if train_optimizer == 'Adam':
-                    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-8)
-                elif train_optimizer == 'Adagrad':
-                    optimizer = tf.train.AdagradOptimizer(learning_rate=learning_rate, initial_accumulator_value=1e-8)
-                elif train_optimizer == 'Momentum':
-                    optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.95)
-                elif train_optimizer == 'ftrl':
-                    optimizer = tf.train.FtrlOptimizer(learning_rate)
+                if self.train_optimizer == 'Adam':
+                    optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-8)
+                elif self.train_optimizer == 'Adagrad':
+                    optimizer = tf.train.AdagradOptimizer(learning_rate=self.learning_rate, initial_accumulator_value=1e-8)
+                elif self.train_optimizer == 'Momentum':
+                    optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate, momentum=0.95)
+                elif self.train_optimizer == 'ftrl':
+                    optimizer = tf.train.FtrlOptimizer(self.learning_rate)
                 train_step = optimizer.minimize(loss, global_step=self.global_step)               
 
         """5 设定summary，以便在Tensorboard里进行可视化 """
@@ -182,52 +157,3 @@ class FM(object):
         return Y_Out, score, regularization, loss, auc, train_step, w_zero_ratio, w_avg, v_zero_ratio, v_avg, labels, score, summary_op
 
 
-# ## 3）模型训练测试
-
-# In[4]:
-
-# 测试数据
-filenames = '/data/csv-all'
-data_type='csv'
-feature_size = 530
-batch_size = 6000
-num_epochs = 200
-next_element = process_data(data_type, filenames, feature_size, batch_size, num_epochs)  
-    
-# 模型参数   
-feature_size = 530
-fm_v_size = 20
-loss_fuc = 'Cross_entropy'
-train_optimizer = 'Adam'
-learning_rate = 0.01
-reg_type = 'l2_reg'
-reg_param = 0.000
-log_path='/data/log/FM_Cross_entropy_L2_0_20180816_01'
-
-# 开始训练
-bea_model = FM(feature_size, fm_v_size, loss_fuc, train_optimizer, learning_rate, reg_type, reg_param)
-Y_Out, score, regularization, loss, auc, train_step, w_zero_ratio, w_avg, v_zero_ratio, v_avg, labels, score, summary_op = bea_model.train(next_element)
-
-init_op = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer(), tf.tables_initializer())
-gpu_fraction = 0.6
-my_device='/gpu:0'
-with tf.device(my_device):
-    sess = get_session(gpu_fraction)
-    sess.run(init_op)
-    batch_cnt = 0
-    #选定可视化存储目录
-    writer = tf.summary.FileWriter(log_path, sess.graph)
-    try:
-         while True:
-            batch_cnt = batch_cnt + 1           
-            a, b, c, d, e, summary = sess.run([loss, auc, w_zero_ratio, w_avg, train_step, summary_op])
-            if batch_cnt % 50 == 0 or batch_cnt <= 10:
-                y, p = sess.run([labels, score])
-                if y.sum() > 0.0:
-                    batch_auc=metrics.roc_auc_score(y, p)
-                else:
-                    batch_auc=0.0
-                print("batch: {} loss: {:.4f} accumulate_auc: {:.4f} batch_auc: {:.4f} w_zero_ratio: {:.4f} w_avg: {:.4f}".format(batch_cnt, a, b[0], batch_auc, c, d))
-                writer.add_summary(summary, batch_cnt)
-    except tf.errors.OutOfRangeError:
-        print("3、Train end of dataset")   
