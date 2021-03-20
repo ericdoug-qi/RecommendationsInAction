@@ -35,7 +35,7 @@ from collections import namedtuple, OrderedDict
 
 
 # my packages
-from recommender.recommender.models.tf2.layers.embedding_lookup import EmbeddingLookup
+from recommender.models.tf2.layers.embedding_lookup import EmbeddingLookup
 
 
 SparseFeat = namedtuple('SparseFeat', ['name', 'voc_size', 'hash_size', 'share_embed','embed_dim', 'dtype'])
