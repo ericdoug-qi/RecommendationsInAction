@@ -27,7 +27,7 @@ import tensorflow as tf
 
 # my packages
 
-tf.compat.v1.enable_v2_behavior()
+# tf.compat.v1.enable_v2_behavior()
 
 ROOT_PATH = '/Users/ericdoug/Documents/datas/adult/'
 #TRAIN_PATH = ROOT_PATH + 'train.csv'
@@ -36,16 +36,23 @@ EVAL_PATH = ROOT_PATH + 'adult.test'
 PREDICT_PATH = ROOT_PATH + 'predict.csv'
 MODEL_PATH = 'adult_model'
 EXPORT_PATH = 'adult_export_model'
-_CSV_COLUMNS = [
+# _CSV_COLUMNS = [
+#     'age', 'workclass', 'fnlwgt', 'education', 'education_num',
+#     'marital_status', 'occupation', 'relationship', 'race', 'gender',
+#     'capital_gain', 'capital_loss', 'hours_per_week', 'native_country',
+#     'income_bracket'
+# ]
+
+_CSV_COLUMNS = [                                #定义CVS列名
     'age', 'workclass', 'fnlwgt', 'education', 'education_num',
     'marital_status', 'occupation', 'relationship', 'race', 'gender',
-    'capital_gain', 'capital_loss', 'hours_per_week', 'native_country',
-    'income_bracket'
+    'capital_gain', 'capital_loss', 'hours_per_week', 'native_area', 'income_bracket'
 ]
 
 _CSV_COLUMN_DEFAULTS = [                        #定义每一列的默认值
-        [0], [''], [0], [''], [0], [''], [''], [''], [''], [''],
-                        [0], [0], [0], [''], ['']]
+        [0], [''], [0], [''], [0],
+        [''], [''], [''], [''], [''],
+        [0], [0], [0], [''], ['']]
 
 # _CSV_COLUMN_DEFAULTS = [[0], [''], [0], [''], [0], [''], [''], [''], [''], [''],
 #                         [0], [0], [0], [''], [0]]
@@ -135,8 +142,8 @@ def parse_csv(value):
     columns = tf.io.decode_csv(value, record_defaults=_CSV_COLUMN_DEFAULTS)
     features = dict(zip(_CSV_COLUMNS, columns))
     labels = features.pop('income_bracket')
-    #classes = tf.equal(labels, '>50K')  # binary classification
-    return features, tf.equal(labels, '>50K')
+    classes = tf.equal(labels, '>50K')  # binary classification
+    return features, classes
 
 def input_fn(data_path, shuffle, num_epochs, batch_size):
     """Generate an input function for the Estimator."""
@@ -173,11 +180,11 @@ def run():
     config = tf.estimator.RunConfig(save_checkpoints_steps=100)
     estimator = tf.estimator.DNNLinearCombinedClassifier(model_dir=MODEL_PATH,
                                                          linear_feature_columns=wide_columns,
-                                                         #linear_optimizer=tf.train.FtrlOptimizer(learning_rate=0.01),
+                                                         linear_optimizer=tf.keras.optimizers.Ftrl(learning_rate=0.01),
                                                          dnn_feature_columns=deep_columns,
                                                          dnn_hidden_units=[256, 64, 32, 16],
-                                                         #dnn_optimizer=tf.train.AdamOptimizer(learning_rate=0.001),
-                                                         loss_reduction=tf.keras.losses.Reduction.SUM,
+                                                         dnn_optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+                                                         # loss_reduction=tf.keras.losses.Reduction.SUM,
                                                          config=config)
     # Linear model.
     # estimator = tf.estimator.LinearClassifier(feature_columns=wide_columns, n_classes=2,
@@ -191,20 +198,20 @@ def run():
     """
     # Evaluate the model.
     eval_result = estimator.evaluate(
-        input_fn=lambda: input_fn(data_path=EVAL_PATH, shuffle=False, num_epochs=1, batch_size=40))
+        input_fn=lambda: input_fn(data_path=EVAL_PATH, shuffle=False, num_epochs=10, batch_size=40))
 
     print('Test set accuracy:', eval_result)
 
     # Predict.
-    pred_dict = estimator.predict(
-        input_fn=lambda: input_fn(data_path=PREDICT_PATH, shuffle=False, num_epochs=1, batch_size=40))
-    for pred_res in pred_dict:
-        print(pred_res['probabilities'][1])
+    # pred_dict = estimator.predict(
+    #     input_fn=lambda: input_fn(data_path=PREDICT_PATH, shuffle=False, num_epochs=1, batch_size=40))
+    # for pred_res in pred_dict:
+    #     print(pred_res['probabilities'][1])
 
     columns = wide_columns + deep_columns
     feature_spec = tf.feature_column.make_parse_example_spec(feature_columns=columns)
     serving_input_fn = tf.estimator.export.build_parsing_serving_input_receiver_fn(feature_spec)
-    estimator.export_savedmodel(EXPORT_PATH, serving_input_fn)
+    estimator.export_saved_model(EXPORT_PATH, serving_input_fn)
 
 
 if __name__ == '__main__':
