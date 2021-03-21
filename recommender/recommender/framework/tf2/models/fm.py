@@ -33,32 +33,40 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import TensorBoard
 from collections import namedtuple, OrderedDict
 
-
 # my packages
-from recommender.models.tf2.layers.embedding_lookup import EmbeddingLookup
+from recommender.recommender.framework.tf2.layers.embedding_lookup import EmbeddingLookup
+from recommender.recommender.framework.tf2.layers.vocab_layer import VocabLayer
+from recommender.recommender.framework.tf2.layers.add_layer import AddLayer
+from recommender.recommender.framework.tf2.layers.embedding_lookup_sparse import EmbeddingLookupSparse
+from recommender.recommender.framework.tf2.layers.hash_layer import HashLayer
+from recommender.recommender.framework.tf2.layers.dense_to_sparsetensor import DenseToSparseTensor
+from recommender.recommender.framework.tf2.layers.fm_layer import FMLayer
 
-
-SparseFeat = namedtuple('SparseFeat', ['name', 'voc_size', 'hash_size', 'share_embed','embed_dim', 'dtype'])
-DenseFeat = namedtuple('DenseFeat', ['name', 'pre_embed','reduce_type','dim', 'dtype'])
-VarLenSparseFeat = namedtuple('VarLenSparseFeat', ['name', 'voc_size','hash_size', 'share_embed', 'weight_name', 'combiner', 'embed_dim','maxlen', 'dtype'])
+SparseFeat = namedtuple('SparseFeat', ['name', 'voc_size', 'hash_size', 'share_embed', 'embed_dim', 'dtype'])
+DenseFeat = namedtuple('DenseFeat', ['name', 'pre_embed', 'reduce_type', 'dim', 'dtype'])
+VarLenSparseFeat = namedtuple('VarLenSparseFeat',
+                              ['name', 'voc_size', 'hash_size', 'share_embed', 'weight_name', 'combiner', 'embed_dim',
+                               'maxlen', 'dtype'])
 # 筛选实体标签categorical 用于定义映射关系
 DICT_CATEGORICAL = {"topic_id": [str(i) for i in range(0, 700)],
                     "keyword_id": [str(i) for i in range(0, 100)],
-           }
+                    }
 
-feature_columns = [SparseFeat(name="topic_id", voc_size=700, hash_size= None,share_embed=None, embed_dim=8, dtype='int32'),
-                   SparseFeat(name="keyword_id", voc_size=10, hash_size= None,share_embed=None, embed_dim=8, dtype='int32'),
-                   SparseFeat(name='client_type', voc_size=2, hash_size= None,share_embed=None, embed_dim=8,dtype='int32'),
-                   SparseFeat(name='post_type', voc_size=2, hash_size= None,share_embed=None, embed_dim=8,dtype='int32'),
-                   VarLenSparseFeat(name="follow_topic_id", voc_size=700, hash_size= None,share_embed='topic_id',weight_name = None, combiner= 'sum', embed_dim=8, maxlen=20,dtype='int32'),
-                   VarLenSparseFeat(name="all_topic_fav_7", voc_size=700, hash_size= None,share_embed='topic_id', weight_name = 'all_topic_fav_7_weight', combiner= 'sum', embed_dim=8, maxlen=5,dtype='int32'),
-                   ]
+feature_columns = [
+    SparseFeat(name="topic_id", voc_size=700, hash_size=None, share_embed=None, embed_dim=8, dtype='int32'),
+    SparseFeat(name="keyword_id", voc_size=10, hash_size=None, share_embed=None, embed_dim=8, dtype='int32'),
+    SparseFeat(name='client_type', voc_size=2, hash_size=None, share_embed=None, embed_dim=8, dtype='int32'),
+    SparseFeat(name='post_type', voc_size=2, hash_size=None, share_embed=None, embed_dim=8, dtype='int32'),
+    VarLenSparseFeat(name="follow_topic_id", voc_size=700, hash_size=None, share_embed='topic_id', weight_name=None,
+                     combiner='sum', embed_dim=8, maxlen=20, dtype='int32'),
+    VarLenSparseFeat(name="all_topic_fav_7", voc_size=700, hash_size=None, share_embed='topic_id',
+                     weight_name='all_topic_fav_7_weight', combiner='sum', embed_dim=8, maxlen=5, dtype='int32'),
+    ]
 
-
-DEFAULT_VALUES = [[0],[''],[0.0],[0.0], [0.0],
-                  [''], [''],[0.0]]
-COL_NAME = ['act', 'client_id', 'client_type', 'post_type', 'topic_id', 'follow_topic_id', 'all_topic_fav_7', 'keyword_id']
-
+DEFAULT_VALUES = [[0], [''], [0.0], [0.0], [0.0],
+                  [''], [''], [0.0]]
+COL_NAME = ['act', 'client_id', 'client_type', 'post_type', 'topic_id', 'follow_topic_id', 'all_topic_fav_7',
+            'keyword_id']
 
 
 def build_input_features(features_columns, prefix=''):
@@ -94,8 +102,10 @@ def build_embedding_matrix(features_columns, linear_dim=None):
             embed_dim = feat_col.embed_dim if linear_dim is None else 1
             name_tag = '' if linear_dim is None else '_linear'
             if vocab_name not in embedding_matrix:
-                embedding_matrix[vocab_name] = tf.Variable(initial_value=tf.random.truncated_normal(shape=(vocab_size, embed_dim),mean=0.0,
-                                                                           stddev=0.001, dtype=tf.float32), trainable=True, name=vocab_name+'_embed'+name_tag)
+                embedding_matrix[vocab_name] = tf.Variable(
+                    initial_value=tf.random.truncated_normal(shape=(vocab_size, embed_dim), mean=0.0,
+                                                             stddev=0.001, dtype=tf.float32), trainable=True,
+                    name=vocab_name + '_embed' + name_tag)
     return embedding_matrix
 
 
@@ -217,7 +227,7 @@ def combined_dnn_input(sparse_embedding_list, dense_value_list):
     elif len(dense_value_list) > 0:
         return Flatten()(concat_func(dense_value_list))
     else:
-        raise("dnn_feature_columns can not be empty list")
+        raise ("dnn_feature_columns can not be empty list")
 
 
 def get_linear_logit(sparse_embedding_list, dense_value_list):
@@ -237,7 +247,7 @@ def get_linear_logit(sparse_embedding_list, dense_value_list):
         dense_linear_layer = Dense(1)(dense_linear)
         return dense_linear_layer
     else:
-        raise("linear_feature_columns can not be empty list")
+        raise ("linear_feature_columns can not be empty list")
 
 
 def FM(feature_columns):
@@ -280,6 +290,3 @@ def FM(feature_columns):
     model = Model(inputs=inputs_list, outputs=output)
 
     return model
-
-
-
