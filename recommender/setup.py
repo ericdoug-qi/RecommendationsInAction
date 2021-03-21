@@ -51,7 +51,7 @@ setup(
         "Programming Language :: Python :: 3.7",
     ],
     keywords="recommendations recommenders recommender system engine machine learning python spark gpu",
-    package_dir={"reco_utils": "reco_utils"},
+    package_dir={"recommender": "recommender"},
     packages=find_packages(where=".", exclude=["tests"]),
     python_requires=">=3.7, <4",
 )
